@@ -1,101 +1,58 @@
-# Ground Truth — Git as Agent Coordination Protocol
+# Ground Truth — Coordinate Agents with Git
 
-You’ve tried agent frameworks, chat protocols, message buses, and task queues. They work in demos but fail with more than a few agents in real codebases.
+You have probably tried an agent framework. They often work in demos but fail when you add multiple agents to a real project. You end up managing custom message queues and state instead of building.
 
-Ground Truth isn’t another runtime. It’s a way to coordinate agents using the protocol that already works at scale: Git.
+This is a different approach. It uses Git—a protocol that scales to millions of users—as the coordination layer for your agents. 🛠️
 
----
-
-## What This Is
-
-A minimal, open-source agent runtime built on Git and GitHub. Each agent is a GitHub user with a Personal Access Token. Coordination happens through commits, pull requests, and comments—not custom chat rooms or RPC.
-
-You define agent personalities, assign them tokens, and let them work through Git operations. The rest is standard GitHub: permissions, audit logs, review workflows, and forks.
-
----
-
-## How It Works
-
-1. **Agents as GitHub users**  
-   Each agent has its own GitHub account and token. The token defines its identity and access.
-
-2. **Coordination through Git**  
-   Agents communicate by making commits, opening pull requests, and commenting. Presence is visibility in the repository graph.
-
-3. **Copilot for cost splitting**  
-   If an agent has a Copilot subscription, it can offload boilerplate code generation while retaining strategic control.
-
-4. **No custom protocol**  
-   Everything uses existing Git tooling and GitHub’s API. No new message formats or state synchronization layers.
-
----
+## Why Git?
+Every new agent system rebuilds the same coordination primitives: locking, history, identity, and review. Git already solves these. This project uses Git's native operations—commits, pull requests, and reviews—as the sole communication channel between agents. There is no custom state to manage.
 
 ## Quick Start
+This is designed for you to fork and own. There is no upstream lock-in.
 
-Deploy to Cloudflare Workers:
-
-```bash
-git clone https://github.com/your-org/ground-truth
-cd ground-truth
-npm install
-npx wrangler deploy
-```
-
-Create a `config.json` with your agents:
-
-```json
-{
-  "agents": [
+1.  **Fork this repository.**
+2.  Clone your fork and deploy it to Cloudflare Workers (zero dependencies, MIT licensed).
+    ```bash
+    git clone https://github.com/your-account/ground-truth
+    cd ground-truth
+    npx wrangler deploy
+    ```
+3.  Configure your agents in `config.json`. Each uses a real GitHub account.
+    ```json
     {
-      "name": "flux",
-      "token": "github_pat_...",
-      "personality": "Lead engineer, pragmatic, ships fast"
+      "agents": [
+        {
+          "name": "engineer",
+          "token": "github_pat_...",
+          "personality": "Writes pragmatic, tested code."
+        }
+      ]
     }
-  ]
-}
-```
+    ```
+4.  Start a coordination cycle.
+    ```bash
+    curl -X POST https://your-worker.workers.dev/cycle \
+      -H "Authorization: Bearer YOUR_SECRET"
+    ```
 
-Run an agent cycle:
+## How It Works
+This is not a runtime. It is a worker that triggers your agents, which then act directly on your repository via the GitHub API.
 
-```bash
-curl -X POST https://your-worker.workers.dev/cycle \
-  -H "Authorization: Bearer YOUR_SECRET"
-```
-
-Agents will check assigned repositories and act based on recent activity.
-
----
+*   **No Custom State:** The worker is stateless. All coordination state—task assignments, discussions, approvals—lives in the Git graph (commits, PRs, reviews). If the worker disappears, you lose no data.
+*   **Debuggable with Familiar Tools:** Every agent action is a commit, comment, or PR status. You debug interactions using `git log` and GitHub's UI, not a proprietary dashboard.
+*   **Agents Act Like Teammates:** Agents are assigned issues, branch off `main`, open draft PRs, request reviews, and merge changes. The workflow mirrors a human team.
 
 ## When to Use This
+✅ You use GitHub for development.
+✅ You need multiple agents to work asynchronously on code or documents.
+✅ You want a transparent, persistent audit trail without maintaining new infrastructure.
 
-- You already use GitHub and want agent coordination without new infrastructure.
-- You need agents to work asynchronously over hours or days, not seconds.
-- You want permissioning and audit logs that integrate with existing tools.
-
----
+❌ This coordinates work over hours or days, not seconds. A single cycle (issue→PR→merge) typically takes 2-5 minutes due to API latency and agent reasoning time.
+❌ You must manage GitHub tokens and rate limits.
 
 ## Limitations
-
-This approach assumes your agents can operate within Git’s commit–review–merge cycle. It is not suitable for real-time, sub-second coordination. Token management and GitHub rate limits are your responsibility.
-
----
-
-## Why It Works
-
-Git is a battle-tested distributed coordination system. GitHub provides identities, permissions, and review workflows. Using them directly means you get 15 years of tooling for free.
-
-Agents don’t need another chat protocol. They need a way to propose changes, discuss them, and merge—exactly what Git already does.
+The system is bound by Git's operations. It cannot guarantee real-time responsiveness. Agent performance is dependent on the underlying model (e.g., GPT-4) and subject to its reasoning errors, which will be visible in the commit history.
 
 ---
 
-## License
-
-MIT
-
----
-
-**Attribution**  
-Superinstance & Lucineer (DiGennaro et al.)
-
-Part of the Cocapn Fleet  
-[Explore the Fleet](https://the-fleet.casey-digennaro.workers.dev) • [Learn about Cocapn](https://cocapn.ai)
+<div style="text-align:center;padding:16px;color:#64748b;font-size:.8rem"><a href="https://the-fleet.casey-digennaro.workers.dev" style="color:#64748b">The Fleet</a> &middot; <a href="https://cocapn.ai" style="color:#64748b">Cocapn</a></div>
